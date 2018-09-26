@@ -1,20 +1,28 @@
 #python 2
-import requests, BeautifulSoup as bs, sqlite3 as sql, pyperclip as pcp
+import  BeautifulSoup as bs, sqlite3 as sql, pyperclip as pcp, requests
 
-def getPasswordFromVpnBook():
+def getPasswordImageLink():
     try:
         print 'Connecting to http://vpnbook.com....'
         dataDump = requests.get('http://vpnbook.com/freevpn')
         htmlDump = bs.BeautifulSoup(dataDump.text)
-        Strong = htmlDump.findAll('strong')
-        password =  str(Strong[8].getText())
-        print 'Succesfully gotten password from http://vpnbook.com'
-        return password
+        images = htmlDump.findAll('img')
+        imageSource =  str(images[3]['src'])
+        imageLink = 'http://vpnbook.com/'+imageSource
+        # print 'Succesfully gotten password from http://vpnbook.com'
+        return imageLink
 
     except requests.exceptions.ConnectionError:
         print 'Failed to connect to vpnbook'
         raw_input('Press any key too retry or just quit the console to end')
-        getPasswordFromVpnBook()
+        getPasswordImageLink()
+
+
+
+def getPasswordFromVpnBook():
+    passwordImageLink = getPasswordImageLink()
+    return passwordImageLink
+
 
 def connectToDB():
     #connect to sqlite engine
@@ -32,7 +40,6 @@ def connectToDB():
     global cursor
     cursor = conn.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS password_table (password varchar(30) )")
-
 
 
 
@@ -81,11 +88,12 @@ def comparePasswords(old,new):
 
 
 def main():
-    connectToDB()
-    oldPassword = getCurrentPassword()
+    # connectToDB()
+    # oldPassword = getCurrentPassword()
     newPassword = getPasswordFromVpnBook()
-    comparePasswords(oldPassword, newPassword)
-    raw_input('press any key to quit...')
+    # comparePasswords(oldPassword, newPassword)
+    # raw_input('press any key to quit...')
+    print newPassword
 
 
 main()
