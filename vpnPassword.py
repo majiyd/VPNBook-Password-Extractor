@@ -1,6 +1,7 @@
 #python 2
-import  BeautifulSoup as bs, sqlite3 as sql, pyperclip as pcp, requests
-
+import  BeautifulSoup as bs, sqlite3 as sql, pyperclip as pcp, requests, pytesseract
+from PIL import Image
+import urllib2 as url, io
 def getPasswordImageLink():
     try:
         print 'Connecting to http://vpnbook.com....'
@@ -9,7 +10,7 @@ def getPasswordImageLink():
         images = htmlDump.findAll('img')
         imageSource =  str(images[3]['src'])
         imageLink = 'http://vpnbook.com/'+imageSource
-        # print 'Succesfully gotten password from http://vpnbook.com'
+        print 'Succesfully gotten image link from http://vpnbook.com'
         return imageLink
 
     except requests.exceptions.ConnectionError:
@@ -17,21 +18,28 @@ def getPasswordImageLink():
         raw_input('Press any key too retry or just quit the console to end')
         getPasswordImageLink()
 
-
+def readTextFromImage():
+    passwordImageLink = getPasswordImageLink()
+    print('Attempting to get password image from vpnbook')
+    getImage = url.urlopen(passwordImageLink)
+    print('reading image bytes')
+    image = io.BytesIO(getImage.read())
+    print('extracting password')
+    return pytesseract.image_to_string(Image.open(image))
 
 def getPasswordFromVpnBook():
-    passwordImageLink = getPasswordImageLink()
-    return passwordImageLink
+    password = readTextFromImage()
+    return password
 
 
 def connectToDB():
     #connect to sqlite engine
-    # print 'Starting Sqlite Engine....'
-    # print "Connecting to db...."
+    print 'Starting Sqlite Engine....'
+    print "Connecting to db...."
     try:
         global conn
         conn = sql.connect('password.db')
-        # print "Successfully connected to db...."
+        print "Successfully connected to db...."
     except sql.Error, e:
         print e.args[1]
         print 'Fatal Error: Failed to connect to database'
@@ -73,6 +81,7 @@ def insertNewPassword(newPass):
         print 'Failed to insert new password'
 
 def comparePasswords(old,new):
+    new = str(new)
     if(old == new):
         print ('Current password is %s' % old)
         pcp.copy(old)
@@ -88,12 +97,12 @@ def comparePasswords(old,new):
 
 
 def main():
-    # connectToDB()
-    # oldPassword = getCurrentPassword()
+    connectToDB()
+    oldPassword = getCurrentPassword()
     newPassword = getPasswordFromVpnBook()
-    # comparePasswords(oldPassword, newPassword)
-    # raw_input('press any key to quit...')
-    print newPassword
+    comparePasswords(oldPassword, newPassword)
+    raw_input('press any key to quit...')
+
 
 
 main()
